@@ -95,8 +95,8 @@ premierCaractereEnMinuscule = False # Force the first character to be in lower c
 
 # list of characters to be replaced by an equivalent. for example an @ will be replaced by 'a'
 # if you add characters, please send me a private message. Il will eventually add it in my code.
-caracEquivalents = [ ['Θ','e'],['Φ','e'],['Ω','e'],['α','a'],['@','a'],['&','e'],['τ','c'],
-                  ['▓','2'],["'",''],['?',''],['"',''],['(',''],[')',''],['#',''],['.',''],
+caracEquivalents = [ ['é','e'],['è','e'],['ê','e'],['à','a'],['@','a'],['&','e'],['ç','c'],
+                  ['²','2'],["'",''],['?',''],['"',''],['(',''],[')',''],['#',''],['.',''],
                   [',',''],[';',''],['$',''],['+',''],['-',''],['*',''],['/',''],['\\',''] ,
                   ['[',''],[']',''],
                   ]
@@ -230,7 +230,7 @@ def create_alias_for_table_cells_Selected():
                 textColumn = mySpreadsheet.get(cellTextColumn)
 
             except :
-                #print('Des cellules en premiΦre colonne ou en premiΦre ligne ne sont pas conformes')
+                #print('Des cellules en première colonne ou en première ligne ne sont pas conformes')
                 continue
             textAlias =  str(textLine) + '_'  + str(textColumn)
             textAlias=traitementChaineSource(textAlias, separateur, nouveauCaract, majuscule)
@@ -243,16 +243,16 @@ def create_alias_for_table_cells_Selected():
                         else:
                             mySpreadsheet.setAlias(cellName, textAlias + '_' + str(i-1))
                             startIndexForTextAlias=i+1    
-                        break  # ArrΩte la boucle si aucune exception n'est levΘe
+                        break  # Arrête la boucle si aucune exception n'est levée
                     except:
-                        continue  # Passe α l'itΘration suivante si une exception est levΘe
+                        continue  # Passe à l'itération suivante si une exception est levée
 
 
 
 
 
 # The dictionary is used to convert what you put in the top line to match
-# what needs to be put in the expression. For example, if you have posx in the
+# what needs to be put in the expression. For example, if you have "posx" in the
 # first line of your selection, in the expression, for the property part, there will be
 # "Placement.Base.x" 
 dico={
