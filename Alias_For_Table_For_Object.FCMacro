@@ -10,7 +10,7 @@ __Name__   = "Alias for table for object"
 __Comment__ ="Automatically creates aliases in a two-dimensional table using the names of the rows and columns"
 __Author__ = "2cv001"
 __Title__   = "Alias For Table For Object"
-__Date__    = "2026/06/04"    #YYYY/MM/DD 14;21 Béta
+__Date__    = "2026/10/21"    #YYYY/MM/DD 14;21 Béta
 __Version__ = __Date__
 __License__ = "Apache-2.0"
 __Wiki__ = "https://wiki.freecad.org/Macro_Alias_For_Table_For_Object"
@@ -144,12 +144,74 @@ def traitementChaineSource(chaineSource, separateur, nouveauCaract, majuscule):
         chaineResult = chaineResult[:1].lower() + chaineResult[1:]
     return chaineResult
 
+def get_column_letter(col_index):
+    """
+    Helper function: Converts a 0-based column index to an Excel/FreeCAD letter string.
+    Example: 0 -> A, 25 -> Z, 26 -> AA, 27 -> AB
+    """
+    result = ""
+    col_index += 1  # Convert to 1-based indexing for the math
+    while col_index > 0:
+        col_index, remainder = divmod(col_index - 1, 26)
+        result = chr(65 + remainder) + result
+    return result
+
+def get_selected_cells_for_spreadsheet(target_sheet_obj):
+    """
+    Directly queries FreeCAD's ViewObject map to fetch selected cells 
+    without hunting down manual Qt widgets or layout trees.
+    """
+    if not target_sheet_obj:
+        return []
+        
+    try:
+        # 1. Access the ViewObject linked to the spreadsheet data object
+        view_obj = target_sheet_obj.ViewObject
+        if not view_obj:
+            return []
+            
+        # 2. FreeCAD 1.1.1's ViewObject offers a direct channel to fetch selected cell addresses
+        # This returns a tuple/list of strings or address references (e.g. ['A1', 'B2'])
+        selected_cells = view_obj.getView().selectedCells()
+        
+        # 3. Reconstruct a fake or lightweight structure resembling QModelIndex
+        # so your service downstream parses it without changing anything else.
+        mock_indexes = []
+        for cell in selected_cells:
+            # cell is typically a string like "A1" or "AB12"
+            # Separate the letters from the numbers
+            letters = ''.join([c for c in cell if c.isalpha()])
+            digits = ''.join([c for c in cell if c.isdigit()])
+            
+            if letters and digits:
+                # Convert the letters back into a 0-based column index
+                col = 0
+                for char in letters:
+                    col = col * 26 + (ord(char.upper()) - 64)
+                col -= 1 # Shift to 0-based index
+                
+                row = int(digits) - 1 # Shift to 0-based index
+                
+                # Mock a lightweight object that provides .row() and .column() methods
+                class MockQModelIndex:
+                    def __init__(self, r, c):
+                        self._r = r
+                        self._c = c
+                    def row(self): return self._r
+                    def column(self): return self._c
+                
+                mock_indexes.append(MockQModelIndex(row, col))
+                
+        return mock_indexes
+        
+    except AttributeError:
+        # Fallback if the tab isn't open or view bindings fail
+        return []
 
 def create_alias_for_table_cells_Selected():
     mySpreadsheet = Gui.ActiveDocument.ActiveView.getSheet()    
-    aw = Gui.getMainWindow().centralWidget().activeSubWindow() # Store the active window      
     # To get list of all selected cells
-    sel_items = aw.widget().findChild(QtGui.QTableView).selectedIndexes() 
+    sel_items = get_selected_cells_for_spreadsheet(mySpreadsheet)
 
     getCellName = lambda r,c:'{}{}{}'.format(chr(c//26 + 64) if c//26 > 0 else '', chr(c%26 + 65), r + 1)
 
@@ -172,7 +234,7 @@ def create_alias_for_table_cells_Selected():
                 continue
             textAlias =  str(textLine) + '_'  + str(textColumn)
             textAlias=traitementChaineSource(textAlias, separateur, nouveauCaract, majuscule)
-            if addNumberIfOther :
+            if mySpreadsheet.getContents(cellName) and addNumberIfOther :
                 startIndexForTextAlias=1
                 for i in range(startIndexForTextAlias, 201):
                     try:
@@ -190,7 +252,7 @@ def create_alias_for_table_cells_Selected():
 
 
 # The dictionary is used to convert what you put in the top line to match
-# what needs to be put in the expression. For example, if you have “posx” in the
+# what needs to be put in the expression. For example, if you have "posx" in the
 # first line of your selection, in the expression, for the property part, there will be
 # "Placement.Base.x" 
 dico={
